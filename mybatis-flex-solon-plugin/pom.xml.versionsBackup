@@ -5,12 +5,12 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>com.mybatis-flex</groupId>
-        <version>3.0</version>
+        <version>1.11.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <name>mybatis-flex-annotation</name>
-    <artifactId>mybatis-flex-annotation</artifactId>
+    <name>mybatis-flex-solon-plugin</name>
+    <artifactId>mybatis-flex-solon-plugin</artifactId>
     <packaging>jar</packaging>
 
 
@@ -21,8 +21,23 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.mybatis</groupId>
-            <artifactId>mybatis</artifactId>
+            <groupId>org.noear</groupId>
+            <artifactId>solon-data</artifactId>
+            <version>${solon.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>com.mybatis-flex</groupId>
+            <artifactId>mybatis-flex-core</artifactId>
+            <version>${mybatis-flex.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.noear</groupId>
+            <artifactId>solon-aot</artifactId>
+            <version>${solon.version}</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
+
 </project>

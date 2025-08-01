@@ -43,6 +43,7 @@ public class QueryColumn implements CloneSupport<QueryColumn>, Conditional<Query
     protected QueryTable table;
     protected String name;
     protected String alias;
+    protected String aliasPrefix;
 
     private boolean returnCopyByAsMethod = false;
 
@@ -113,6 +114,17 @@ public class QueryColumn implements CloneSupport<QueryColumn>, Conditional<Query
         this.alias = alias;
     }
 
+    public String getAliasPrefix() {
+        if (aliasPrefix == null) {
+            return "";
+        }
+        return aliasPrefix;
+    }
+
+    public void setAliasPrefix(String aliasPrefix) {
+        this.aliasPrefix = aliasPrefix;
+    }
+
     public <T> QueryColumn as(LambdaGetter<T> fn) {
         return as(fn, false);
     }
@@ -127,6 +139,7 @@ public class QueryColumn implements CloneSupport<QueryColumn>, Conditional<Query
             QueryColumn newColumn = new QueryColumn();
             newColumn.table = this.table;
             newColumn.name = this.name;
+            newColumn.aliasPrefix = this.aliasPrefix;
             newColumn.alias = alias;
             return newColumn;
         } else {
@@ -1068,4 +1081,18 @@ public class QueryColumn implements CloneSupport<QueryColumn>, Conditional<Query
         }
     }
 
+    public QueryColumn asPrefix(String aliasPrefix) {
+        SqlUtil.keepColumnSafely(aliasPrefix);
+        if (returnCopyByAsMethod) {
+            QueryColumn newColumn = new QueryColumn();
+            newColumn.table = this.table;
+            newColumn.name = this.name;
+            newColumn.alias = this.alias;
+            newColumn.aliasPrefix = aliasPrefix;
+            return newColumn;
+        } else {
+            this.aliasPrefix = aliasPrefix;
+            return this;
+        }
+    }
 }

@@ -23,6 +23,7 @@ import com.mybatisflex.core.row.Db;
 import com.mybatisflex.core.update.UpdateChain;
 import com.mybatisflex.core.util.ClassUtil;
 import com.mybatisflex.core.util.CollectionUtil;
+import com.mybatisflex.core.util.MapperUtil;
 import com.mybatisflex.core.util.SqlUtil;
 
 import java.io.Serializable;
@@ -30,6 +31,9 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
 /**
@@ -687,4 +691,12 @@ public interface IService<T> {
         return UpdateChain.create(getMapper());
     }
     //endregion ===== 查询包装器操作 =====
+
+    default QueryColumn[] asPrefix(QueryColumn[] queryColumns, String aliasPrefix) {
+        QueryColumn[] result = new QueryColumn[queryColumns.length];
+        for (int i = 0; i < queryColumns.length; i++) {
+            result[i] = queryColumns[i].asPrefix(aliasPrefix);
+        }
+        return result;
+    }
 }

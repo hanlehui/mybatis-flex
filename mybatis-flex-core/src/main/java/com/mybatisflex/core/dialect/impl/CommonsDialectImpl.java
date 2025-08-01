@@ -391,6 +391,9 @@ public class CommonsDialectImpl implements IDialect {
         return buildSelectSql(queryWrapper);
     }
 
+    private boolean isSingletonList(List<?> list) {
+        return "java.util.Collections$SingletonList".equals(list.getClass().getName());
+    }
 
     ////////////build query sql///////
     @Override
@@ -408,8 +411,7 @@ public class CommonsDialectImpl implements IDialect {
 
         List<QueryColumn> selectColumns = CPI.getSelectColumns(queryWrapper);
 
-        // 多个表，非 SELECT * 时，需要处理重名字段
-        if (allTables.size() > 1 && selectColumns != null && selectColumns.size() > 1) {
+        if (selectColumns != null && !isSingletonList(selectColumns)) {
             IntStream.range(0, selectColumns.size())
                 .boxed()
                 // 生成 索引-字段值 对应关系
@@ -417,25 +419,64 @@ public class CommonsDialectImpl implements IDialect {
                 .entrySet()
                 .stream()
                 // 需要处理别名的情况
-                .filter(e -> StringUtil.hasText(e.getValue().getName()))
-                .filter(e -> StringUtil.noText(e.getValue().getAlias()))
                 .filter(e -> !"*".equals(e.getValue().getName()))
-                // 将相同字段对象放在一个集合里
-                .collect(Collectors.groupingBy(e -> e.getValue().getName(),
-                    Collectors.collectingAndThen(Collectors.toList(), Collections::unmodifiableList)))
-                .values()
-                .stream()
-                // 过滤出来重名的字段
-                .filter(e -> e.size() > 1)
-                // 合并所有需要加别名的字段
-                .flatMap(Collection::stream)
-                // 过滤出来可以添加别名的列
-                .filter(e -> e.getValue().getTable() != null)
-                .filter(e -> StringUtil.hasText(e.getValue().getTable().getName()))
-                // 添加别名并放回原集合索引位置
-                .forEach(e -> selectColumns.set(e.getKey(),
-                    e.getValue().as(e.getValue().getTable().getName() + "$" + e.getValue().getName())));
+                .forEach(e -> {
+                    if (StringUtil.hasText(e.getValue().getName())
+                        && StringUtil.noText(e.getValue().getAlias())
+                        && e.getValue().getTable() != null
+                        && StringUtil.hasText(e.getValue().getTable().getName())) {
+                        e.setValue(e.getValue().as(e.getValue().getTable().getName() + "$" + e.getValue().getName()));
+                    }
+                    String alias = e.getValue().getAlias();
+                    if (StringUtil.hasText(alias) && !alias.startsWith(e.getValue().getAliasPrefix())) {
+                        e.setValue(e.getValue().as(e.getValue().getAliasPrefix() + alias));
+                    }
+                    selectColumns.set(e.getKey(), e.getValue());
+                });
         }
+
+
+//        // 多个表，非 SELECT * 时，需要处理重名字段
+//        if (allTables.size() > 1 && selectColumns != null && selectColumns.size() > 1) {
+//            IntStream.range(0, selectColumns.size())
+//                .boxed()
+//                // 生成 索引-字段值 对应关系
+//                .collect(Collectors.toMap(Function.identity(), selectColumns::get))
+//                .entrySet()
+//                .stream()
+//                // 需要处理别名的情况
+////                .filter(e -> StringUtil.hasText(e.getValue().getName()))
+////                .filter(e -> StringUtil.noText(e.getValue().getAlias()))
+//                .filter(e -> !"*".equals(e.getValue().getName()))
+//                .forEach(e -> {
+//                    if (StringUtil.hasText(e.getValue().getName())
+//                        && StringUtil.noText(e.getValue().getAlias())
+//                        && e.getValue().getTable() != null
+//                        && StringUtil.hasText(e.getValue().getTable().getName())) {
+//                        e.setValue(e.getValue().as(e.getValue().getTable().getName() + "$" + e.getValue().getName()));
+//                    }
+//                    String alias = e.getValue().getAlias();
+//                    if (StringUtil.hasText(alias) && !alias.startsWith(e.getValue().getAliasPrefix())) {
+//                        e.setValue(e.getValue().as(e.getValue().getAliasPrefix() + alias));
+//                    }
+//                    selectColumns.set(e.getKey(), e.getValue());
+//                });
+//                // 将相同字段对象放在一个集合里
+////                .collect(Collectors.groupingBy(e -> e.getValue().getName(),
+////                    Collectors.collectingAndThen(Collectors.toList(), Collections::unmodifiableList)))
+////                .values()
+////                .stream()
+////                // 过滤出来重名的字段
+////                .filter(e -> e.size() > 1)
+////                // 合并所有需要加别名的字段
+////                .flatMap(Collection::stream)
+////                // 过滤出来可以添加别名的列
+////                .filter(e -> e.getValue().getTable() != null)
+////                .filter(e -> StringUtil.hasText(e.getValue().getTable().getName()))
+////                // 添加别名并放回原集合索引位置
+////                .forEach(e -> selectColumns.set(e.getKey(),
+////                    e.getValue().as(e.getValue().getAliasPrefix() + e.getValue().getTable().getName() + "$" + e.getValue().getName())));
+//        }
 
         StringBuilder sqlBuilder = new StringBuilder();
         With with = CPI.getWith(queryWrapper);
