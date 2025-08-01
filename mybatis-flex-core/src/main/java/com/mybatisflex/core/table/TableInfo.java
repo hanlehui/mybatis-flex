@@ -1131,12 +1131,12 @@ public class TableInfo {
 
         // <resultMap> 标签下的 <id> 标签映射
         for (IdInfo idInfo : primaryKeyList) {
-            doBuildColumnResultMapping(configuration, resultMappings, idInfo, CollectionUtil.newArrayList(ResultFlag.ID), tableNamePrefix);
+            doBuildColumnResultMapping(configuration, resultMappings, idInfo, CollectionUtil.newArrayList(ResultFlag.ID), isNested, tableNamePrefix);
         }
 
         // <resultMap> 标签下的 <result> 标签映射
         for (ColumnInfo columnInfo : columnInfoList) {
-            doBuildColumnResultMapping(configuration, resultMappings, columnInfo, Collections.emptyList(), tableNamePrefix);
+            doBuildColumnResultMapping(configuration, resultMappings, columnInfo, Collections.emptyList(), isNested, tableNamePrefix);
         }
 
         // <resultMap> 标签下的 <association> 标签映射
@@ -1201,7 +1201,7 @@ public class TableInfo {
     }
 
     private void doBuildColumnResultMapping(Configuration configuration, List<ResultMapping> resultMappings
-        , ColumnInfo columnInfo, List<ResultFlag> flags, String tableNamePrefix) {
+        , ColumnInfo columnInfo, List<ResultFlag> flags, boolean isNested, String tableNamePrefix) {
 
         // userName -> tb_user$user_name
         resultMappings.add(new ResultMapping.Builder(configuration
@@ -1212,6 +1212,11 @@ public class TableInfo {
             .flags(flags)
             .typeHandler(columnInfo.buildTypeHandler(configuration))
             .build());
+
+        if (!isNested) {
+            buildDefaultResultMapping(configuration, resultMappings, columnInfo, flags);
+        }
+
 
         if (ArrayUtil.isNotEmpty(columnInfo.alias)) {
             for (String alias : columnInfo.alias) {
