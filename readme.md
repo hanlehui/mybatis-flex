@@ -57,4 +57,8 @@ public class WmsMaterialType extends BaseEntity
 `byQuery`的`resultMap`别名变成`wms_material_type$id`和`wms_material_type$wms_material_type$id`
 > TODO: 优化别名逻辑，用属性名而不是表名，例如`id`和`parent$id`
 
+
 > TODO: 优化selectColumns的编排能力，同时尽量避免用户使用直接写sql的情况，比如如果用户改了某个字段名，修改完关联的实体类的属性名就会引发ide对相关引用错误识别
+
+
+> TODO: fix: 当分页时启用分页优化会将leftJoin里相同的表名去除掉，树形表(parentId)或其余情况分页查询时会造成sql错误
