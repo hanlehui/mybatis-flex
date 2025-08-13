@@ -1144,7 +1144,7 @@ public class TableInfo {
                 TableInfo tableInfo = TableInfoFactory.ofEntityClass(fieldType);
                 // 构建嵌套类型的 ResultMap 对象，也就是 <association> 标签下的内容
                 String propertyPrefix = prePropertyName == null ? fieldName : prePropertyName + "$" + fieldName;
-                ResultMap nestedResultMap = tableInfo.doBuildResultMap(configuration, classNames, true, nestedPrefix + ":" + tableInfo.getTableNameWithSchema(), propertyPrefix, withCircularReference);
+                ResultMap nestedResultMap = tableInfo.doBuildResultMap(configuration, new HashSet<>(classNames), true, nestedPrefix + ":" + fieldName, propertyPrefix, withCircularReference);
                 if (nestedResultMap != null) {
                     resultMappings.add(new ResultMapping.Builder(configuration, fieldName)
                         .javaType(fieldType)
@@ -1183,7 +1183,7 @@ public class TableInfo {
                     TableInfo tableInfo = TableInfoFactory.ofEntityClass(genericClass);
                     // 构建嵌套类型的 ResultMap 对象，也就是 <collection> 标签下的内容
                     String propertyPrefix = prePropertyName == null ? field.getName() : prePropertyName + "$" + field.getName();
-                    ResultMap nestedResultMap = tableInfo.doBuildResultMap(configuration, classNames, true, nestedPrefix + ":" + tableInfo.getTableNameWithSchema(), propertyPrefix, withCircularReference);
+                    ResultMap nestedResultMap = tableInfo.doBuildResultMap(configuration, new HashSet<>(classNames), true, nestedPrefix + ":" + field.getName(), propertyPrefix, withCircularReference);
                     if (nestedResultMap != null) {
                         resultMappings.add(new ResultMapping.Builder(configuration, field.getName())
                             .javaType(field.getType())
@@ -1204,15 +1204,6 @@ public class TableInfo {
         , ColumnInfo columnInfo, List<ResultFlag> flags, boolean isNested, String propertyPrefix) {
 
         if (!isNested) {
-            // userName -> user_name
-            resultMappings.add(new ResultMapping.Builder(configuration
-                , columnInfo.property
-                , columnInfo.column
-                , columnInfo.propertyType)
-                .jdbcType(columnInfo.getJdbcType())
-                .flags(flags)
-                .typeHandler(columnInfo.buildTypeHandler(configuration))
-                .build());
             buildDefaultResultMapping(configuration, resultMappings, columnInfo, flags);
         } else {
             // userName -> user$user_name
