@@ -1095,4 +1095,20 @@ public class QueryColumn implements CloneSupport<QueryColumn>, Conditional<Query
             return this;
         }
     }
+
+    public QueryColumn asPrefix(String tableAlias, String aliasPrefix) {
+        SqlUtil.keepColumnSafely(aliasPrefix);
+        if (returnCopyByAsMethod) {
+            QueryColumn newColumn = new QueryColumn();
+            newColumn.table = this.table.clone().as(tableAlias);
+            newColumn.name = this.name;
+            newColumn.alias = this.alias;
+            newColumn.aliasPrefix = aliasPrefix;
+            return newColumn;
+        } else {
+            this.table.as(tableAlias);
+            this.aliasPrefix = aliasPrefix;
+            return this;
+        }
+    }
 }

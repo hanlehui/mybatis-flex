@@ -1109,11 +1109,9 @@ public class TableInfo {
         return doBuildResultMap(configuration, new HashSet<>(), false, getTableNameWithSchema(), null, false);
     }
 
-    private ResultMap doBuildResultMap(Configuration configuration, Set<String> classNames, boolean isNested, String nestedPrefix, String preTableName, boolean lastWithCircularReference) {
+    private ResultMap doBuildResultMap(Configuration configuration, Set<String> classNames, boolean isNested, String nestedPrefix, String prePropertyName, boolean lastWithCircularReference) {
 
         String resultMapId = isNested ? "nested-" + nestedPrefix + ":" + entityClass.getName() : entityClass.getName();
-
-        String tableNamePrefix = preTableName == null ? tableName : preTableName + "$" + tableName;
 
         // 是否有循环引用 至多再引用一层
         if (lastWithCircularReference) {
@@ -1131,12 +1129,12 @@ public class TableInfo {
 
         // <resultMap> 标签下的 <id> 标签映射
         for (IdInfo idInfo : primaryKeyList) {
-            doBuildColumnResultMapping(configuration, resultMappings, idInfo, CollectionUtil.newArrayList(ResultFlag.ID), isNested, tableNamePrefix);
+            doBuildColumnResultMapping(configuration, resultMappings, idInfo, CollectionUtil.newArrayList(ResultFlag.ID), isNested, prePropertyName);
         }
 
         // <resultMap> 标签下的 <result> 标签映射
         for (ColumnInfo columnInfo : columnInfoList) {
-            doBuildColumnResultMapping(configuration, resultMappings, columnInfo, Collections.emptyList(), isNested, tableNamePrefix);
+            doBuildColumnResultMapping(configuration, resultMappings, columnInfo, Collections.emptyList(), isNested, prePropertyName);
         }
 
         // <resultMap> 标签下的 <association> 标签映射
@@ -1145,7 +1143,8 @@ public class TableInfo {
                 // 获取嵌套类型的信息，也就是 javaType 属性
                 TableInfo tableInfo = TableInfoFactory.ofEntityClass(fieldType);
                 // 构建嵌套类型的 ResultMap 对象，也就是 <association> 标签下的内容
-                ResultMap nestedResultMap = tableInfo.doBuildResultMap(configuration, classNames, true, nestedPrefix + ":" + tableInfo.getTableNameWithSchema(), tableNamePrefix, withCircularReference);
+                String propertyPrefix = prePropertyName == null ? fieldName : prePropertyName + "$" + fieldName;
+                ResultMap nestedResultMap = tableInfo.doBuildResultMap(configuration, classNames, true, nestedPrefix + ":" + tableInfo.getTableNameWithSchema(), propertyPrefix, withCircularReference);
                 if (nestedResultMap != null) {
                     resultMappings.add(new ResultMapping.Builder(configuration, fieldName)
                         .javaType(fieldType)
@@ -1183,7 +1182,8 @@ public class TableInfo {
                     // 获取集合泛型类型的信息，也就是 ofType 属性
                     TableInfo tableInfo = TableInfoFactory.ofEntityClass(genericClass);
                     // 构建嵌套类型的 ResultMap 对象，也就是 <collection> 标签下的内容
-                    ResultMap nestedResultMap = tableInfo.doBuildResultMap(configuration, classNames, true, nestedPrefix + ":" + tableInfo.getTableNameWithSchema(), tableNamePrefix, withCircularReference);
+                    String propertyPrefix = prePropertyName == null ? field.getName() : prePropertyName + "$" + field.getName();
+                    ResultMap nestedResultMap = tableInfo.doBuildResultMap(configuration, classNames, true, nestedPrefix + ":" + tableInfo.getTableNameWithSchema(), propertyPrefix, withCircularReference);
                     if (nestedResultMap != null) {
                         resultMappings.add(new ResultMapping.Builder(configuration, field.getName())
                             .javaType(field.getType())
@@ -1201,20 +1201,29 @@ public class TableInfo {
     }
 
     private void doBuildColumnResultMapping(Configuration configuration, List<ResultMapping> resultMappings
-        , ColumnInfo columnInfo, List<ResultFlag> flags, boolean isNested, String tableNamePrefix) {
-
-        // userName -> tb_user$user_name
-        resultMappings.add(new ResultMapping.Builder(configuration
-            , columnInfo.property
-            , tableNamePrefix + "$" + columnInfo.column
-            , columnInfo.propertyType)
-            .jdbcType(columnInfo.getJdbcType())
-            .flags(flags)
-            .typeHandler(columnInfo.buildTypeHandler(configuration))
-            .build());
+        , ColumnInfo columnInfo, List<ResultFlag> flags, boolean isNested, String propertyPrefix) {
 
         if (!isNested) {
+            // userName -> user_name
+            resultMappings.add(new ResultMapping.Builder(configuration
+                , columnInfo.property
+                , columnInfo.column
+                , columnInfo.propertyType)
+                .jdbcType(columnInfo.getJdbcType())
+                .flags(flags)
+                .typeHandler(columnInfo.buildTypeHandler(configuration))
+                .build());
             buildDefaultResultMapping(configuration, resultMappings, columnInfo, flags);
+        } else {
+            // userName -> user$user_name
+            resultMappings.add(new ResultMapping.Builder(configuration
+                , columnInfo.property
+                , propertyPrefix + "$" + columnInfo.column
+                , columnInfo.propertyType)
+                .jdbcType(columnInfo.getJdbcType())
+                .flags(flags)
+                .typeHandler(columnInfo.buildTypeHandler(configuration))
+                .build());
         }
 
 

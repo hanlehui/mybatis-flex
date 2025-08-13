@@ -699,4 +699,12 @@ public interface IService<T> {
         }
         return result;
     }
+
+    default QueryColumn[] asPrefix(QueryColumn[] queryColumns, String tableAlias, String aliasPrefix) {
+        QueryColumn[] result = new QueryColumn[queryColumns.length];
+        for (int i = 0; i < queryColumns.length; i++) {
+            result[i] = queryColumns[i].asPrefix(tableAlias, aliasPrefix);
+        }
+        return result;
+    }
 }

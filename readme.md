@@ -1,5 +1,7 @@
 ### 特性
 方便自己用
+
+### 树形表
 ```java
 @EqualsAndHashCode(callSuper = true)
 @Data
@@ -54,9 +56,35 @@ public class WmsMaterialType extends BaseEntity
     private List<WmsMaterialType> children;
 }
 ```
-`byQuery`的`resultMap`别名变成`wms_material_type$id`和`wms_material_type$wms_material_type$id`
-> TODO: 优化别名逻辑，用属性名而不是表名，例如`id`和`parent$id`
 
+### 修改说明
+`byQuery`的`resultMap`中parent引用属性下的别名变成`parent$id`、`parent$name`，`parent`为属性名
+
+更深层次可以变成`A$B$C$user_name`，其中`A$B$C$`为指明的前缀，可以使用提供的asPrefix方法设置
+
+### 使用说明
+```java
+// 使用IService中的默认asPrefix方法 此方法将会使columns都加上前缀和表别名 parent.name -> `parent`.`name` as parent$name
+mapper.paginate(page, createDefaultQueryWrapper(wmsMaterialType)
+    .select(WMS_MATERIAL_TYPE.DEFAULT_COLUMNS,
+            asPrefix(WMS_MATERIAL_TYPE.DEFAULT_COLUMNS, "parent", "parent$")));
+```
+```java
+// 使用IService中的默认asPrefix方法 此方法将会使columns都加上前缀 material.name -> `wms_material`.`name` as material$name
+public Page<WmsReceiveLine> selectWmsReceiveLinePage(WmsReceiveLine wmsReceiveLine) {
+    return mapper.paginate(PageUtils.getPage(WmsReceiveLine.class), createDefaultQueryWrapper(wmsReceiveLine)
+        .select(WMS_RECEIVE_LINE.DEFAULT_COLUMNS,
+            asPrefix(WMS_PUT.DEFAULT_COLUMNS, "put$"),
+            asPrefix(WMS_MATERIAL.DEFAULT_COLUMNS, "material$"),
+            asPrefix(WMS_MATERIAL_ITEM.DEFAULT_COLUMNS, "materialItem$"),
+            asPrefix(WMS_MATERIAL_TYPE.DEFAULT_COLUMNS, "materialType$"),
+            asPrefix(WMS_SUPPLIER.DEFAULT_COLUMNS, "supplier$"),
+            asPrefix(WMS_WAREHOUSE.DEFAULT_COLUMNS, "warehouse$"),
+            asPrefix(WMS_AREA.DEFAULT_COLUMNS, "area$"),
+            asPrefix(WMS_ROADWAY.DEFAULT_COLUMNS, "roadway$"),
+            asPrefix(WMS_SHELF.DEFAULT_COLUMNS, "shelf$")));
+}
+```
 
 > TODO: 优化selectColumns的编排能力，同时尽量避免用户使用直接写sql的情况，比如如果用户改了某个字段名，修改完关联的实体类的属性名就会引发ide对相关引用错误识别
 

@@ -425,7 +425,7 @@ public class CommonsDialectImpl implements IDialect {
                         && StringUtil.noText(e.getValue().getAlias())
                         && e.getValue().getTable() != null
                         && StringUtil.hasText(e.getValue().getTable().getName())) {
-                        e.setValue(e.getValue().as(e.getValue().getTable().getName() + "$" + e.getValue().getName()));
+                        e.setValue(e.getValue().as(e.getValue().getName()));
                     }
                     String alias = e.getValue().getAlias();
                     if (StringUtil.hasText(alias) && !alias.startsWith(e.getValue().getAliasPrefix())) {
