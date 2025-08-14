@@ -21,6 +21,7 @@ import com.mybatisflex.core.row.Row;
 import com.mybatisflex.core.util.*;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.util.*;
 
 public class ToManyRelation<SelfEntity> extends AbstractRelation<SelfEntity> {
@@ -39,11 +40,22 @@ public class ToManyRelation<SelfEntity> extends AbstractRelation<SelfEntity> {
     public ToManyRelation(String selfField, String targetSchema, String targetTable, String targetField, String valueField,
                           String joinTable, String joinSelfColumn, String joinTargetColumn,
                           String dataSource, Class<SelfEntity> selfEntityClass, Field relationField,
+                          String extraCondition, String[] selectColumns, boolean middleMapping) {
+        super(selfField, targetSchema, targetTable, targetField, valueField,
+            joinTable, joinSelfColumn, joinTargetColumn,
+            dataSource, selfEntityClass, relationField,
+            extraCondition, selectColumns, middleMapping
+        );
+    }
+
+    public ToManyRelation(String selfField, String targetSchema, String targetTable, String targetField, String valueField,
+                          String joinTable, String joinSelfColumn, String joinTargetColumn,
+                          String dataSource, Class<SelfEntity> selfEntityClass, Field relationField,
                           String extraCondition, String[] selectColumns) {
         super(selfField, targetSchema, targetTable, targetField, valueField,
             joinTable, joinSelfColumn, joinTargetColumn,
             dataSource, selfEntityClass, relationField,
-            extraCondition, selectColumns
+            extraCondition, selectColumns, false
         );
     }
 
@@ -111,20 +123,44 @@ public class ToManyRelation<SelfEntity> extends AbstractRelation<SelfEntity> {
         if (mappingRows != null) {
             //当使用中间表时，需要重新映射关联关系
             Map<String, List<Object>> temp = new HashMap<>(selfEntities.size());
-            for (Row mappingRow : mappingRows) {
-                Object midTableJoinSelfValue = mappingRow.getIgnoreCase(joinSelfColumn);
-                if (midTableJoinSelfValue == null) {
-                    continue;
+            Set<String> filledKeys = new HashSet<>();
+            try {
+                for (Row mappingRow : mappingRows) {
+                    Object midTableJoinSelfValue = mappingRow.getIgnoreCase(joinSelfColumn);
+                    if (midTableJoinSelfValue == null) {
+                        continue;
+                    }
+                    Object midTableJoinTargetValue = mappingRow.getIgnoreCase(joinTargetColumn);
+                    if (midTableJoinTargetValue == null) {
+                        continue;
+                    }
+                    List<Object> targetObjects = leftFieldToRightTableMap.get(midTableJoinTargetValue.toString());
+                    if (targetObjects == null) {
+                        continue;
+                    }
+                    // 填充中间表数据
+                    if (middleMapping && !filledKeys.contains(midTableJoinTargetValue.toString())) {
+                        for (Object targetObject : targetObjects) {
+                            List<Field> allFields = ClassUtil.getAllFields(targetObject.getClass(), field -> {
+                                int modifiers = field.getModifiers();
+                                return !Modifier.isStatic(modifiers) && !Modifier.isTransient(modifiers);
+                            });
+                            for (Field field : allFields) {
+                                field.setAccessible(true);
+                                if (field.get(targetObject) == null) {
+                                    Object rowValue = mappingRow.getIgnoreCase(field.getName());
+                                    if (rowValue != null) {
+                                        field.set(targetObject, ConvertUtil.convert(rowValue, field.getType()));
+                                    }
+                                }
+                            }
+                        }
+                        filledKeys.add(midTableJoinTargetValue.toString());
+                    }
+                    temp.computeIfAbsent(midTableJoinSelfValue.toString(), k -> new ArrayList<>(targetObjects.size())).addAll(targetObjects);
                 }
-                Object midTableJoinTargetValue = mappingRow.getIgnoreCase(joinTargetColumn);
-                if (midTableJoinTargetValue == null) {
-                    continue;
-                }
-                List<Object> targetObjects = leftFieldToRightTableMap.get(midTableJoinTargetValue.toString());
-                if (targetObjects == null) {
-                    continue;
-                }
-                temp.computeIfAbsent(midTableJoinSelfValue.toString(), k -> new ArrayList<>(targetObjects.size())).addAll(targetObjects);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException("填充中间表数据时出现错误.", e);
             }
             leftFieldToRightTableMap = temp;
         }

@@ -63,6 +63,7 @@ public class WmsMaterialType extends BaseEntity
 更深层次可以变成`A$B$C$user_name`，其中`A$B$C$`为指明的前缀，可以使用提供的asPrefix方法设置
 
 ### 使用说明
+> `@RelationManyToMany`注解中加入`middleMapping`选项，设置为`true`则会将中间表中的字段映射到目标对象中，如果目标对象中出现该字段但值不为空则不映射。（慎用）
 ```java
 // 使用IService中的默认asPrefix方法 此方法将会使columns都加上前缀和表别名 parent.name -> `parent`.`name` as parent$name
 mapper.paginate(page, createDefaultQueryWrapper(wmsMaterialType)
@@ -90,3 +91,6 @@ public Page<WmsReceiveLine> selectWmsReceiveLinePage(WmsReceiveLine wmsReceiveLi
 
 
 > TODO: fix: 当分页时启用分页优化会将leftJoin里相同的表名去除掉，树形表(parentId)或其余情况分页查询时会造成sql错误
+
+
+

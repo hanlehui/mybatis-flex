@@ -126,4 +126,11 @@ public @interface RelationManyToMany {
      */
     String dataSource() default "";
 
+    /**
+     * 是否将中间表中的字段映射到目标对象中，如果目标对象中出现该字段但值不为空则不映射。(慎用，名称相同为null值将会用中间表的值覆盖)
+     *
+     * @return 是否
+     */
+    boolean middleMapping() default false;
+
 }

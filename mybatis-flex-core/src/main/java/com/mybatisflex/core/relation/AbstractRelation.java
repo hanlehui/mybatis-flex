@@ -57,6 +57,7 @@ public abstract class AbstractRelation<SelfEntity> {
     protected String joinTable;
     protected String joinSelfColumn;
     protected String joinTargetColumn;
+    protected boolean middleMapping;
 
     protected String dataSource;
 
@@ -69,7 +70,7 @@ public abstract class AbstractRelation<SelfEntity> {
     public AbstractRelation(String selfField, String targetSchema, String targetTable, String targetField, String valueField,
                             String joinTable, String joinSelfColumn, String joinTargetColumn,
                             String dataSource, Class<SelfEntity> entityClass, Field relationField,
-                            String extraCondition, String[] selectColumns
+                            String extraCondition, String[] selectColumns, boolean middleMapping
     ) {
         this.name = entityClass.getSimpleName() + "." + relationField.getName();
         this.simpleName = relationField.getName();
@@ -80,6 +81,7 @@ public abstract class AbstractRelation<SelfEntity> {
         this.joinTable = joinTable;
         this.joinSelfColumn = joinSelfColumn;
         this.joinTargetColumn = joinTargetColumn;
+        this.middleMapping = middleMapping;
 
         this.dataSource = dataSource;
 

@@ -31,7 +31,7 @@ public class ToOneRelation<SelfEntity> extends AbstractRelation<SelfEntity> {
         super(selfField, targetSchema, targetTable, targetField, valueField,
             joinTable, joinSelfColumn, joinTargetColumn,
             dataSource, selfEntityClass, relationField,
-            extraCondition, selectColumns
+            extraCondition, selectColumns, false
         );
     }
 
